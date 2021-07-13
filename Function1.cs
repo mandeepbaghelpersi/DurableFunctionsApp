@@ -16,38 +16,76 @@ namespace DurableFunctionsApp
         public static async Task<List<string>> RunOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
+            
             //take the list of students
             List<Student> studentList = new StudentCollection().students;
             var tasks = new List<string>();
 
+            //get grade strings for all students
             foreach(var student in studentList)
             {
-                tasks.Add(await context.CallActivityAsync<string>("Function1_GetGrade", student));
+                tasks.Add(await context.CallActivityAsync<
+                    string
+                    >("Function1_GetGradeString", student));
             }
+
+            //get the topper from both the grade
+            tasks.Add(await context.CallActivityAsync<
+                   string
+                   >("Function1_GetToppers", studentList));
 
             return tasks;
         }
 
-        [FunctionName("Function1_GetGrade")]
-        public static string GetGrade([ActivityTrigger] Student student, ILogger log)
+        [FunctionName("Function1_GetGradeString")]
+        public static string GetGradeString([ActivityTrigger] Student student, ILogger log)
         {
-            log.LogInformation($"Getting grade for {student.name}");
-
-            if(student.percentage > 80) return $"{student.name} - A Division";
-            else if (student.percentage > 35) return $"{student.name} - B Division";
-            else return $"{student.name} - C (Failed)";
+            //return the grade string
+            log.LogInformation($"Printing Grade for {student.name}");
+            return $"{student.name} - {GetGrade(student.percentage)} Division";
         }
 
-        //[FunctionName("Function1_GetTopper")]
-        //public static string GetGrade([ActivityTrigger] Student student, ILogger log)
-        //{
-        //    log.LogInformation($"Getting grade.");
 
-        //    if (student.percentage > 80) return $"{student.name} - A Division";
-        //    else if (student.percentage > 35) return $"{student.name} - B Division";
-        //    else return $"{student.name} - C (Failed)";
-        //}
+        [FunctionName("Function1_GetToppers")]
+        public static string GetToppers([ActivityTrigger] List<Student> studentList, ILogger log)
+        {
+            log.LogInformation($"Find toppers.......");
+            double topperAPercentage = 0,topperBPercentage = 0;
+            string topperAName = "", topperBName = "";
+            //check for percentages of all students to find the list.
+            foreach(Student student in studentList)
+            {
+                //find topper for Division A
+                if(GetGrade(student.percentage) == "A" && student.percentage > topperAPercentage)
+                {
+                    topperAPercentage = student.percentage;
+                    topperAName = student.name;
+                }
+                //find topper for Division B
+                if (GetGrade(student.percentage) == "B" && student.percentage > topperBPercentage)
+                {
+                    topperBPercentage = student.percentage;
+                    topperBName = student.name;
+                }
+            }
 
+            //return the complete string containing toppers of both division.
+            return $"Topper in Division A is {topperAName} with {topperAPercentage}%. Topper in Division B is {topperBName} with {topperBPercentage}%.";
+        }
+
+        //utility function to find grade from percentage (not a activity function)
+        public static string GetGrade(double percentage)
+        {
+            if (percentage >= 80)
+            {
+                return "A";
+            }
+
+            else if (percentage > 35)
+                return "B";
+            else
+                return "C";
+        }
 
         [FunctionName("Function1_HttpStart")]
         public static async Task<HttpResponseMessage> HttpStart(
@@ -62,5 +100,8 @@ namespace DurableFunctionsApp
 
             return starter.CreateCheckStatusResponse(req, instanceId);
         }
+
+
+       
     }
 }

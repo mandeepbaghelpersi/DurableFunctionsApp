@@ -8,7 +8,7 @@ namespace DurableFunctionsApp
     {
         public List<Student> students = new List<Student>()
         {
-            new Student(){ id=1, name="Mandeep Baghel", percentage= 80 },
+            new Student(){ id=1, name="Mandeep Baghel", percentage= 78 },
             new Student(){ id=2, name="Mohit Patel", percentage= 76.12 },
             new Student(){ id=3, name="Mahim Panchal", percentage= 84 },
             new Student(){ id=4, name="Ruchir Gavshinde", percentage= 96 },
